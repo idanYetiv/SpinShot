@@ -1,0 +1,60 @@
+{
+  "app": {
+    "title": "SpinShot",
+    "tagline": "Spin it. Do it. Or drink it."
+  },
+  "welcome": {
+    "createGame": "Create Game",
+    "joinGame": "Join Game",
+    "howToPlay": "How to Play",
+    "howToPlaySteps": [
+      "One player creates a room",
+      "Others join via room code",
+      "Take turns spinning the wheel",
+      "Complete the challenge — or drink!",
+      "Most shots = Most legendary"
+    ]
+  },
+  "ageDisclaimer": {
+    "title": "Age Verification",
+    "message": "This game is intended for players aged 18+ (or the legal drinking age in your country). Please drink responsibly.",
+    "confirm": "I am 18+ and I drink responsibly",
+    "cancel": "I'm under 18"
+  },
+  "create": {
+    "title": "Create Game",
+    "name": "Your Name",
+    "namePlaceholder": "Enter your name",
+    "language": "Game Language",
+    "gameLength": "Game Length",
+    "minutes": "{{count}} minutes",
+    "createRoom": "Create Room"
+  },
+  "join": {
+    "title": "Join Game",
+    "name": "Your Name",
+    "namePlaceholder": "Enter your name",
+    "code": "Room Code",
+    "codePlaceholder": "Enter 6-letter code",
+    "joinRoom": "Join Room"
+  },
+  "lobby": {
+    "title": "Game Lobby",
+    "roomCode": "Room Code",
+    "players": "Players",
+    "waiting": "Waiting for host to start...",
+    "startGame": "Start Game",
+    "minPlayers": "Need at least 2 players",
+    "shareCode": "Share this code with friends!"
+  },
+  "results": {
+    "title": "Game Over!",
+    "finalLeaderboard": "Final Leaderboard",
+    "playAgain": "Play Again",
+    "backHome": "Back to Home"
+  },
+  "language": {
+    "en": "English",
+    "he": "עברית"
+  }
+}

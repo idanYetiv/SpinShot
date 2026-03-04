@@ -1,0 +1,24 @@
+{
+  "spin": "סובב!",
+  "spinning": "מסתובב...",
+  "complete": "הושלם",
+  "fail": "נכשל — שתה!",
+  "yourTurn": "התור שלך!",
+  "waitingTurn": "התור של {{name}}",
+  "round": "סיבוב {{current}} / {{total}}",
+  "timeLeft": "זמן שנותר",
+  "leaderboard": "טבלת מובילים",
+  "shots": "שוטים",
+  "completed": "הושלם",
+  "failed": "נכשל",
+  "chaosEvent": "!אירוע כאוס",
+  "categories": {
+    "solo": "אתגר סולו",
+    "duo": "אתגר זוגי",
+    "group": "כאוס קבוצתי",
+    "truth": "אמת / וידוי",
+    "skill": "מבוסס מיומנות",
+    "speed": "סיבוב מהירות",
+    "secret": "משימה סודית"
+  }
+}

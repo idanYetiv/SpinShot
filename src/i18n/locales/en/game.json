@@ -1,0 +1,24 @@
+{
+  "spin": "Spin!",
+  "spinning": "Spinning...",
+  "complete": "Completed",
+  "fail": "Failed — Drink!",
+  "yourTurn": "Your Turn!",
+  "waitingTurn": "{{name}}'s Turn",
+  "round": "Round {{current}} / {{total}}",
+  "timeLeft": "Time Left",
+  "leaderboard": "Leaderboard",
+  "shots": "Shots",
+  "completed": "Done",
+  "failed": "Failed",
+  "chaosEvent": "CHAOS EVENT!",
+  "categories": {
+    "solo": "Solo Challenge",
+    "duo": "Duo Challenge",
+    "group": "Group Chaos",
+    "truth": "Truth / Confession",
+    "skill": "Skill-Based",
+    "speed": "Speed Round",
+    "secret": "Secret Mission"
+  }
+}
