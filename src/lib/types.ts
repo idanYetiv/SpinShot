@@ -1,7 +1,13 @@
 export type Language = "en" | "he";
 export type RoomStatus = "waiting" | "playing" | "finished";
 export type MissionCategory = "solo" | "duo" | "group" | "truth" | "skill" | "speed" | "secret";
+export type LocalizedText = { en: string; he: string };
 
+export interface RoomSettings {
+  chaos_enabled: boolean;
+}
+
+/** Supabase row (Phase 2). */
 export interface Room {
   id: string;
   code: string;
@@ -15,18 +21,14 @@ export interface Room {
   settings: RoomSettings;
 }
 
-export interface RoomSettings {
-  chaos_enabled: boolean;
-}
-
 export interface Player {
   id: string;
-  room_id: string;
   name: string;
-  shots: number;
+  penalties: number;
   challenges_completed: number;
   challenges_failed: number;
   fail_streak: number;
+  best_fail_streak: number;
   is_host: boolean;
   joined_at: string;
 }
@@ -34,55 +36,28 @@ export interface Player {
 export interface Mission {
   id: string;
   category: MissionCategory;
-  text: { en: string; he: string };
+  text: LocalizedText;
   duration?: number; // seconds, for timed missions
   target?: "solo" | "duo" | "group";
-}
-
-export interface ChaosEvent {
-  id: string;
-  text: { en: string; he: string };
-  effect: ChaosEffect;
 }
 
 export type ChaosEffect =
   | "double_spin"
   | "reverse_order"
-  | "everyone_drinks"
+  | "everyone_penalty"
   | "safe_round"
   | "triple_penalty";
 
-export interface GameState {
-  roomCode: string;
-  status: RoomStatus;
-  players: Player[];
-  currentPlayerIndex: number;
-  round: number;
-  totalRounds: number;
-  currentMission: Mission | null;
-  currentChaos: ChaosEvent | null;
-  usedMissionIds: string[];
-  timeRemainingSeconds: number;
-  turnOrder: string[]; // player IDs
-  isReversed: boolean;
+export interface ChaosEvent {
+  id: string;
+  text: LocalizedText;
+  effect: ChaosEffect;
 }
 
 export interface PlayerTitle {
   id: string;
-  key: string;
   emoji: string;
-  text: { en: string; he: string };
-  description: { en: string; he: string };
+  text: LocalizedText;
+  description: LocalizedText;
   criteria: (players: Player[]) => Player | null;
 }
-
-// Broadcast event types
-export type GameEvent =
-  | { type: "game_start"; state: GameState }
-  | { type: "spin_result"; category: MissionCategory }
-  | { type: "mission_assigned"; mission: Mission; playerId: string }
-  | { type: "mission_complete"; playerId: string }
-  | { type: "mission_fail"; playerId: string; shots: number }
-  | { type: "turn_change"; playerIndex: number }
-  | { type: "chaos_event"; event: ChaosEvent }
-  | { type: "game_end" };

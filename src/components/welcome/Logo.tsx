@@ -1,28 +1,35 @@
-import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
+import { colors, textGlow } from "../../theme";
 
 export function Logo() {
+  const { t } = useTranslation();
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1.05, { duration: 1200, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [pulse]);
+
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
+
   return (
-    <motion.div
-      className="flex flex-col items-center gap-2"
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", duration: 0.8 }}
-    >
-      <motion.h1
-        className="text-6xl font-black tracking-tight text-glow-pink"
-        animate={{ textShadow: [
-          "0 0 10px rgba(255,16,240,0.6), 0 0 30px rgba(255,16,240,0.3)",
-          "0 0 20px rgba(255,16,240,0.8), 0 0 50px rgba(255,16,240,0.4)",
-          "0 0 10px rgba(255,16,240,0.6), 0 0 30px rgba(255,16,240,0.3)",
-        ]}}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        <span className="text-neon-pink">SPIN</span>
-        <span className="text-neon-blue">SHOT</span>
-      </motion.h1>
-      <p className="text-text-secondary text-sm tracking-widest uppercase">
-        Spin it. Do it. Or drink it.
-      </p>
-    </motion.div>
+    <View style={styles.wrap}>
+      {/* One text run, so the Latin wordmark keeps its order in RTL too */}
+      <Animated.View style={style}>
+        <Text style={styles.word}>
+          <Text style={[{ color: colors.pink }, textGlow(colors.pink)]}>SPIN</Text>
+          <Text style={[{ color: colors.blue }, textGlow(colors.blue)]}>SHOT</Text>
+        </Text>
+      </Animated.View>
+      <Text style={styles.tagline}>{t("app.tagline")}</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { alignItems: "center", gap: 10 },
+  word: { writingDirection: "ltr", fontSize: 60, fontWeight: "900", letterSpacing: -1 },
+  tagline: { color: colors.textSecondary, fontSize: 14, letterSpacing: 2, textTransform: "uppercase", textAlign: "center" },
+});

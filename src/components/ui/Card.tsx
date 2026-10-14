@@ -1,28 +1,28 @@
-import type { HTMLAttributes } from "react";
-import { cn } from "../../lib/utils";
+import type { ReactNode } from "react";
+import { StyleSheet, View, type ViewStyle } from "react-native";
+import { colors, glow, radius, space } from "../../theme";
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  glow?: "pink" | "blue" | "green" | "gold";
-}
-
-const glowMap = {
-  pink: "glow-pink",
-  blue: "glow-blue",
-  green: "glow-green",
-  gold: "glow-gold",
-};
-
-export function Card({ glow, className, children, ...props }: CardProps) {
+export function Card({ children, glowColor, style }: { children: ReactNode; glowColor?: string; style?: ViewStyle }) {
   return (
-    <div
-      className={cn(
-        "glass rounded-2xl p-6",
-        glow && glowMap[glow],
-        className,
-      )}
-      {...props}
+    <View
+      style={[
+        styles.card,
+        glowColor ? { borderColor: glowColor, boxShadow: glow(glowColor, 0.35) } : null,
+        style,
+      ]}
     >
       {children}
-    </div>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    gap: space.md,
+  },
+});

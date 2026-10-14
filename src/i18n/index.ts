@@ -6,7 +6,7 @@ import enGame from "./locales/en/game.json";
 import heCommon from "./locales/he/common.json";
 import heGame from "./locales/he/game.json";
 
-i18n.use(initReactI18next).init({
+void i18n.use(initReactI18next).init({
   resources: {
     en: { common: enCommon, game: enGame },
     he: { common: heCommon, game: heGame },

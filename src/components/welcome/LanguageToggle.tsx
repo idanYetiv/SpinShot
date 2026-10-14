@@ -1,19 +1,27 @@
+import { Pressable, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
+import { colors, radius } from "../../theme";
+import { usePlayerStore } from "../../store/playerStore";
 
 export function LanguageToggle() {
   const { i18n } = useTranslation();
-
-  function toggle() {
-    const next = i18n.language === "en" ? "he" : "en";
-    i18n.changeLanguage(next);
-  }
-
+  const setLanguage = usePlayerStore((s) => s.setLanguage);
+  const next = i18n.language === "en" ? "he" : "en";
   return (
-    <button
-      onClick={toggle}
-      className="rounded-lg border border-glass-border px-3 py-1.5 text-sm text-text-secondary hover:text-white hover:border-neon-blue transition-colors cursor-pointer"
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        setLanguage(next);
+        void i18n.changeLanguage(next);
+      }}
+      style={styles.btn}
     >
-      {i18n.language === "en" ? "עברית" : "English"}
-    </button>
+      <Text style={styles.text}>{next === "he" ? "עברית" : "English"}</Text>
+    </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  btn: { borderWidth: 1, borderColor: colors.glassBorder, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 6 },
+  text: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
+});

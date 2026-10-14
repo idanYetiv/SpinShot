@@ -1,3 +1,5 @@
+> **Note (Oct 2026):** this is the original concept spec. The app is now positioned as a *party game*: "drink" became "take the penalty" (the group picks its house penalty), age gate is 17+, and the stack is Expo + Supabase. See `CLAUDE.md` and `SYSTEM-DESIGN.md` for the current design.
+
 # 🍻 SPINSHOT
 
 ### The Ultimate Party Spinner Game

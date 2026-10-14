@@ -1,6 +1,6 @@
 # SpinShot — System Design
 
-> Technical reference for the SpinShot party game architecture.
+> Technical reference for the SpinShot party game architecture (Expo app).
 
 ---
 
@@ -9,116 +9,98 @@
 ### Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Client (React 19)                       │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
-│  │ Welcome   │  │ Create/  │  │ Lobby    │  │ Game       │  │
-│  │ Page      │  │ Join     │  │ Page     │  │ Page       │  │
-│  │           │  │ Pages    │  │          │  │            │  │
-│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
-│        │              │             │              │          │
-│        └──────────────┴─────────────┴──────────────┘          │
+┌──────────────────────────────────────────────────────────────┐
+│                 Expo app (iOS / Android / web)                │
+│                                                               │
+│  Expo Router screens: / · /create · /join · /lobby/[code]     │
+│                       /game/[code] · /results/[code]          │
 │                          │                                    │
-│  ┌───────────────────────┴────────────────────────────────┐  │
-│  │                    Zustand Stores                       │  │
-│  │  gameStore (game state)  ·  playerStore (local player)  │  │
-│  └───────────────────────┬────────────────────────────────┘  │
+│  ┌───────────────────────┴─────────────────────────────────┐ │
+│  │                    Zustand stores                        │ │
+│  │  gameStore (game engine)  ·  playerStore (AsyncStorage)  │ │
+│  └───────────────────────┬─────────────────────────────────┘ │
 │                          │                                    │
-│  ┌───────────────────────┴────────────────────────────────┐  │
-│  │              Supabase Client (Phase 2)                  │  │
-│  │  React Query (rooms, players)  ·  Realtime Channels     │  │
-│  └───────────────────────┬────────────────────────────────┘  │
+│  ┌───────────────────────┴─────────────────────────────────┐ │
+│  │        Supabase client (Phase 2): Realtime channel       │ │
+│  └───────────────────────┬─────────────────────────────────┘ │
 └──────────────────────────┼───────────────────────────────────┘
-                           │
                            ▼
               ┌────────────────────────┐
-              │      Supabase          │
-              │                        │
-              │  ┌──────────────────┐  │
-              │  │  PostgreSQL      │  │
-              │  │  rooms           │  │
-              │  │  players         │  │
-              │  │  game_results    │  │
-              │  └──────────────────┘  │
-              │                        │
-              │  ┌──────────────────┐  │
-              │  │  Realtime        │  │
-              │  │  Channels        │  │
-              │  │  Presence        │  │
-              │  │  Broadcast       │  │
-              │  └──────────────────┘  │
+              │  Supabase              │
+              │  Postgres: rooms,      │
+              │  players, game_results │
+              │  Realtime: Presence +  │
+              │  Broadcast             │
               └────────────────────────┘
 ```
 
-### Multiplayer Model
+### Play modes
+
+- **Pass-and-play (today)**: one phone runs `gameStore`; the host adds players in the lobby and the phone is passed around.
+- **Online (Phase 2)**: every player on their own phone. The host's `gameStore` is the source of truth and is broadcast over a Supabase Realtime channel; the other phones render it and send actions (complete / penalty) back.
+
+### Multiplayer model (Phase 2)
 
 ```
-Host Client                          Player Clients
+Host phone                            Player phones
 ┌──────────────────┐                ┌──────────────────┐
-│  Game Logic       │                │  Render Only      │
-│  - Turn rotation  │   Broadcast    │  - Listen to      │
-│  - Mission select │ ─────────────► │    game events     │
-│  - Score tracking │   (channel)    │  - Display state   │
-│  - Chaos events   │                │  - Send actions    │
-│  - Timer          │ ◄───────────── │    (complete/fail) │
-└──────────────────┘   User Action   └──────────────────┘
+│  gameStore        │   Broadcast    │  Render only      │
+│  - turn rotation  │ ─────────────► │  - mirror state    │
+│  - mission select │   (channel)    │  - send actions    │
+│  - chaos effects  │                │    on their turn   │
+│  - scoring/timer  │ ◄───────────── │                    │
+└──────────────────┘   User action   └──────────────────┘
 ```
 
-**Host authority**: The host client is the single source of truth. It runs all game logic and broadcasts state changes. Other clients listen and render. If the host disconnects, the first remaining player (by join order) becomes the new host via Presence.
+If the host disconnects, the first remaining player by join order becomes host (Presence) and continues from the last broadcast state.
 
 ### Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| UI | React 19 + TypeScript (strict) | Component framework |
-| Build | Vite 7 | Dev server + bundler |
-| Styling | Tailwind CSS v4 | CSS-first config, neon theme |
-| Client State | Zustand 5 | Game state + player info |
-| Server State | React Query 5 (Phase 2) | Room/player CRUD |
-| Routing | React Router 7 | BrowserRouter (web), MemoryRouter (native) |
-| Animation | Framer Motion | Wheel spinner, cards, transitions |
+| App | Expo SDK 57, React Native 0.86, TypeScript strict | iOS, Android, web |
+| Routing | Expo Router | File-based routes in `src/app` |
+| Styling | StyleSheet + `src/theme` tokens | Neon theme, `boxShadow` glows |
+| State | Zustand 5 | Game engine + persisted player identity |
+| Animation | Reanimated 4, expo-haptics | Wheel, card entrances, feedback |
+| Graphics | react-native-svg, expo-linear-gradient | Wheel, background |
 | i18n | i18next + react-i18next | Hebrew/English + RTL |
-| Backend | Supabase | Postgres + Realtime + Presence |
-| Native | Capacitor 8 (Phase 5) | iOS + Android |
-| Deploy | Vercel | Frontend hosting |
+| Backend | Supabase (Phase 2) | Postgres + Realtime + Presence + anonymous auth |
+| Build | EAS Build / Submit / Update | Store builds, OTA updates |
 
 ---
 
-## Part B — Database Schema
-
-### Tables
+## Part B — Database Schema (Phase 2)
 
 ```sql
--- Rooms: one per game session
 CREATE TABLE rooms (
-  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code       text UNIQUE NOT NULL,          -- 6-char room code (e.g. "AB3K7M")
-  host_id    text NOT NULL,                 -- player UUID who created the room
-  language   text NOT NULL DEFAULT 'en',    -- 'en' | 'he'
-  game_length int NOT NULL DEFAULT 20,      -- minutes (20 or 30)
-  status     text NOT NULL DEFAULT 'waiting', -- 'waiting' | 'playing' | 'finished'
-  created_at timestamptz DEFAULT now(),
-  started_at timestamptz,
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code        text UNIQUE NOT NULL,            -- 6-char room code
+  host_id     uuid NOT NULL,                   -- auth.uid() of host (anonymous auth)
+  language    text NOT NULL DEFAULT 'en',      -- 'en' | 'he'
+  game_length int  NOT NULL DEFAULT 20,        -- minutes (20 or 30)
+  status      text NOT NULL DEFAULT 'waiting', -- 'waiting' | 'playing' | 'finished'
+  created_at  timestamptz DEFAULT now(),
+  started_at  timestamptz,
   finished_at timestamptz,
-  settings   jsonb DEFAULT '{"chaos_enabled": true}'::jsonb
+  settings    jsonb DEFAULT '{"chaos_enabled": true}'::jsonb
 );
 
--- Players: joined to a room
 CREATE TABLE players (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   room_id              uuid REFERENCES rooms(id) ON DELETE CASCADE,
+  user_id              uuid NOT NULL,          -- auth.uid()
   name                 text NOT NULL,
-  shots                int DEFAULT 0,
+  penalties            int DEFAULT 0,
   challenges_completed int DEFAULT 0,
   challenges_failed    int DEFAULT 0,
   fail_streak          int DEFAULT 0,
+  best_fail_streak     int DEFAULT 0,
   is_host              boolean DEFAULT false,
   joined_at            timestamptz DEFAULT now(),
   UNIQUE(room_id, name)
 );
 
--- Game Results: saved at game end
 CREATE TABLE game_results (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   room_id     uuid REFERENCES rooms(id) ON DELETE CASCADE,
@@ -127,260 +109,90 @@ CREATE TABLE game_results (
 );
 ```
 
-### Row Level Security (No Auth MVP)
+### Security
 
-```sql
--- Public access — no auth required in MVP
-ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "rooms_public" ON rooms FOR ALL USING (true) WITH CHECK (true);
-
-ALTER TABLE players ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "players_public" ON players FOR ALL USING (true) WITH CHECK (true);
-
-ALTER TABLE game_results ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "results_public" ON game_results FOR ALL USING (true) WITH CHECK (true);
-```
-
-### Indexes
-
-```sql
-CREATE INDEX idx_rooms_code ON rooms(code);
-CREATE INDEX idx_rooms_status ON rooms(status);
-CREATE INDEX idx_players_room_id ON players(room_id);
-```
+Use Supabase **anonymous sign-in** so every phone has an `auth.uid()`. RLS: anyone signed in can read a room by code and insert themselves as a player; only the host (`host_id = auth.uid()`) can update the room or other players' scores. Do not ship the open `USING (true)` policies from the original draft.
 
 ---
 
-## Part C — Realtime Architecture
+## Part C — Realtime Architecture (Phase 2)
 
-### Channel Structure
+One channel per room: `room:{CODE}` with Presence keyed by player id.
 
-Each room uses a single Supabase channel: `room:{CODE}`
+| Event | Direction | Payload |
+|-------|-----------|---------|
+| `state` | Host → All | Full `gameStore` snapshot (small; send after every action) |
+| `action` | Player → Host | `{ type: 'complete' \| 'penalty', playerId }` |
+| `start` / `end` | Host → All | — |
 
-```typescript
-const channel = supabase.channel(`room:${roomCode}`, {
-  config: { presence: { key: playerId } },
-});
-```
-
-### Presence (Online Players)
-
-```typescript
-// Track player presence
-channel.on("presence", { event: "sync" }, () => {
-  const state = channel.presenceState();
-  // Update player list from presence state
-});
-
-// Join with player info
-channel.subscribe(async (status) => {
-  if (status === "SUBSCRIBED") {
-    await channel.track({ name, playerId, isHost });
-  }
-});
-```
-
-### Broadcast Events
-
-| Event | Direction | Payload | Description |
-|-------|-----------|---------|-------------|
-| `game_start` | Host → All | `GameState` | Host starts the game |
-| `spin_result` | Host → All | `{ category }` | Wheel spin result |
-| `mission_assigned` | Host → All | `{ mission, playerId }` | Mission for current player |
-| `mission_complete` | Player → Host | `{ playerId }` | Player completed mission |
-| `mission_fail` | Player → Host | `{ playerId, shots }` | Player failed, drinks assigned |
-| `turn_change` | Host → All | `{ playerIndex }` | Next player's turn |
-| `chaos_event` | Host → All | `{ event }` | Chaos event triggered |
-| `game_end` | Host → All | `{}` | Game over |
-
-### Host Failover
-
-```
-1. Host disconnects → Presence removes host from state
-2. All clients detect host absence via presence "leave" event
-3. First player in join order (lowest joined_at) becomes new host
-4. New host updates room.host_id in DB
-5. New host resumes game logic from last known state
-```
+Sending the full snapshot instead of fine-grained events keeps late joiners and host failover simple.
 
 ---
 
-## Part D — Frontend Architecture
+## Part D — App Architecture
 
 ### Routes
 
-| Route | Page | Auth Required |
-|-------|------|---------------|
-| `/` | WelcomePage | No |
-| `/create` | CreateGamePage | No |
-| `/join` | JoinGamePage | No |
-| `/lobby/:code` | LobbyPage | No |
-| `/game/:code` | GamePage | No |
-| `/results/:code` | ResultsPage | No |
-
-### Component Tree
-
-```
-App
-├── WelcomePage
-│   ├── Logo                    # Animated neon title
-│   ├── AgeDisclaimer           # 18+ modal (localStorage gated)
-│   ├── HowToPlay               # Rules modal
-│   └── LanguageToggle           # en ↔ he switch
-├── CreateGamePage
-│   └── Card (form: name, language, game length)
-├── JoinGamePage
-│   └── Card (form: name, room code)
-├── LobbyPage
-│   ├── RoomCodeDisplay          # Code with copy-to-clipboard
-│   ├── GameSettings             # Language + duration badges
-│   └── PlayerJoinList           # Animated player list (Presence)
-├── GamePage
-│   ├── Timer                    # Countdown (mm:ss)
-│   ├── PlayerList               # Current players with active indicator
-│   ├── WheelSpinner             # 7-segment SVG wheel (Framer Motion)
-│   ├── MissionCard              # Mission text + Complete/Fail buttons
-│   ├── ChaosEventDisplay        # Gold chaos card overlay
-│   └── Leaderboard              # Sorted by shots (compact)
-└── ResultsPage
-    ├── TitleCard[]              # MVP, Most Drank, Most Fearless, etc.
-    └── FinalLeaderboard         # Full stats per player
-```
-
-### State Management
-
-#### Zustand — `gameStore.ts`
-
-```typescript
-interface GameState {
-  roomCode: string;
-  status: RoomStatus;              // 'waiting' | 'playing' | 'finished'
-  players: Player[];
-  currentPlayerIndex: number;
-  round: number;
-  totalRounds: number;
-  currentMission: Mission | null;
-  currentChaos: ChaosEvent | null;
-  usedMissionIds: string[];        // Prevent repeats within 5-round window
-  timeRemainingSeconds: number;
-  turnOrder: string[];             // Player IDs
-  isReversed: boolean;             // Reversed by chaos event
-}
-```
-
-#### Zustand — `playerStore.ts` (persisted to localStorage)
-
-```typescript
-interface PlayerStore {
-  name: string;
-  playerId: string;                // crypto.randomUUID(), stable across page loads
-}
-```
-
-### Game Logic (`lib/gameLogic.ts`)
-
-| Function | Purpose |
-|----------|---------|
-| `getNextPlayerIndex(state)` | Calculate next player (handles reverse order) |
-| `selectMission(category, usedIds)` | Pick random mission, avoiding recent 35 |
-| `shouldTriggerChaos()` | 10% probability check |
-| `calculateRounds(minutes, players)` | ~30s per turn formula |
-| `getPlayerTitle(player, all)` | Determine end-game award |
-| `WHEEL_CATEGORIES` | 7 categories in wheel order |
-
-### i18n
-
-- **Namespaces**: `common` (UI strings), `game` (gameplay strings)
-- **Languages**: `en`, `he`
-- **RTL**: `useDirection()` hook sets `document.documentElement.dir` on language change
-- **Mission text**: Stored as `{ en: string; he: string }` in data files, rendered by current language
-
----
-
-## Part E — Data Files
-
-### Missions (`data/missions.ts`) — 80 total
-
-| Category | Count | Target | Has Duration |
-|----------|-------|--------|-------------|
-| solo | 15 | solo | Some |
-| duo | 12 | duo | No |
-| group | 12 | group | No |
-| truth | 12 | solo | No |
-| skill | 10 | solo | Yes |
-| speed | 10 | solo | Yes (all) |
-| secret | 9 | mixed | No |
-
-### Chaos Events (`data/chaosEvents.ts`) — 8 events
-
-| Effect | Description |
-|--------|-------------|
-| `double_spin` | Spin again after this turn |
-| `reverse_order` | Flip turn direction |
-| `everyone_drinks` | All players take a sip |
-| `safe_round` | No penalty this turn |
-| `triple_penalty` | Next fail = 3 shots |
-
-### Titles (`data/titles.ts`) — 5 awards
-
-| Title | Emoji | Criteria |
-|-------|-------|----------|
-| MVP | 🏆 | Most challenges completed |
-| Most Drank | 💀 | Most shots taken |
-| Most Fearless | 🔥 | Most challenges failed |
-| Iron Liver | 🫀 | Longest fail streak (≥3) |
-| Saint | 😇 | Zero shots + completed challenges |
-
----
-
-## Part F — Visual Theme
-
-### Color Tokens
-
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `bg-dark` | `#0A0A0A` | Background start |
-| `bg-purple` | `#1A0B2E` | Background end |
-| `neon-pink` | `#FF10F0` | Primary accent, CTA buttons |
-| `neon-blue` | `#00D4FF` | Secondary accent, info |
-| `neon-green` | `#39FF14` | Success states |
-| `neon-red` | `#FF3131` | Fail states, danger |
-| `neon-gold` | `#FFD700` | Chaos events, awards |
-| `glass` | `rgba(255,255,255,0.05)` | Card backgrounds |
-| `glass-border` | `rgba(255,255,255,0.1)` | Card borders |
-
-### CSS Utilities
-
-| Class | Effect |
+| Route | Screen |
 |-------|--------|
-| `.glass` | Glassmorphism card (bg + border + blur) |
-| `.glow-pink/blue/green/red/gold` | Box shadow glow |
-| `.text-glow-pink/blue` | Text shadow glow |
+| `/` | Welcome: logo, Create/Join/How to play, one-time 17+ disclaimer, language toggle |
+| `/create` | Name, language, game length → creates room in `gameStore` |
+| `/join` | Name + code (enabled in Phase 2) |
+| `/lobby/[code]` | Room code (tap to copy), players, add pass-and-play players, Start |
+| `/game/[code]` | Turn header + timer, chaos banner, wheel ↔ mission card, outcome line, leaderboard |
+| `/results/[code]` | Titles, final leaderboard, Play again (same group) |
+
+### Game engine (`store/gameStore.ts`)
+
+State: `status`, `players`, `currentIndex`, `turnsTaken`, `totalRounds`, `endsAt`, `phase` (`spin`/`mission`), `currentMission`, `currentChaos`, `usedMissionIds`, `reversed`, per-turn modifiers (`safeTurn`, `penaltyMultiplier`, `extraSpin`), `lastOutcome`.
+
+| Action | Effect |
+|--------|--------|
+| `spin(category)` | Picks a mission (avoids the last 35), 10% chaos roll and applies its effect |
+| `completeMission()` | +1 completed, resets fail streak, next turn |
+| `failMission()` | + penalties (×3 if triple, 0 if safe turn), streak tracking, next turn |
+| next turn | Double spin keeps the same player; otherwise advance (respecting reverse). Ends when all rounds are played or time runs out |
+
+Rounds: `floor(minutes × 60 / 30s / players)`; every player gets one turn per round.
+
+### Chaos events (`data/chaosEvents.ts`)
+
+| Effect | Behaviour |
+|--------|-----------|
+| `double_spin` | Same player spins again after this turn |
+| `reverse_order` | Flips turn direction |
+| `everyone_penalty` | +1 penalty for every player |
+| `safe_round` | Failing this turn costs nothing |
+| `triple_penalty` | Failing this turn = 3 penalties |
+
+### Titles (`data/titles.ts`) — a title is awarded only to a single leader (ties win nothing)
+
+| Title | Criteria |
+|-------|----------|
+| 🏆 MVP | Most challenges completed |
+| 💀 Penalty Magnet | Most penalties |
+| 🔥 Most Fearless | Most challenges failed |
+| 🦾 Unbreakable | Longest fail streak (≥ 3) |
+| 😇 Untouchable | Only player with zero penalties and ≥ 1 completed |
+
+### i18n / RTL
+
+Namespaces `common` and `game`; mission/chaos/title text is `{ en, he }` in data files. RTL uses the Yoga `direction` style on screen roots (native) and `document.dir` on web, so switching language needs no reload.
 
 ---
 
-## Part G — Deployment & Native
+## Part E — Content
 
-### Web (Vercel)
-
-- `npm run build` → `dist/` → Vercel auto-deploy from `main`
-- SPA fallback: all routes → `index.html`
-
-### Native (Capacitor — Phase 5)
-
-```typescript
-// capacitor.config.ts
-const config: CapacitorConfig = {
-  appId: "app.spinshot.game",
-  appName: "SpinShot",
-  webDir: "dist",
-};
-```
-
-- **Routing**: `MemoryRouter` for native, `BrowserRouter` for web (detected via `isNativePlatform()`)
-- **Safe areas**: Capacitor StatusBar + SafeArea plugins
-- **Haptics**: Capacitor Haptics plugin on spin, complete, fail events
+80 missions in 7 categories (solo 15, duo 12, group 12, truth 12, skill 10, speed 10, secret 9). Wording is party-game neutral: "take the penalty", never "drink". The group agrees on its house penalty before playing.
 
 ---
 
-*Last updated: March 4, 2026*
+## Part F — Build & Release
+
+- Dev: `npx expo start` + Expo Go (all current modules are in Expo Go).
+- Store builds: EAS (`eas init`, `eas build`, `eas submit`), bundle id `com.isyappstudio.spinshot`, Expo/Supabase projects under the `isyappstudio` org.
+- Age rating target: 17+ (party content, user-defined penalties). Store copy should describe a party game.
+
+---
+
+*Last updated: October 14, 2026*

@@ -1,25 +1,27 @@
 {
   "app": {
     "title": "SpinShot",
-    "tagline": "Spin it. Do it. Or drink it."
+    "tagline": "Spin it. Do it. Or pay the penalty."
   },
+  "common": { "back": "Back", "gotIt": "Got it!" },
   "welcome": {
     "createGame": "Create Game",
     "joinGame": "Join Game",
     "howToPlay": "How to Play",
     "howToPlaySteps": [
       "One player creates a room",
-      "Others join via room code",
+      "Everyone else joins with the room code",
+      "Before you start, agree on your house penalty — 10 push-ups, a silly dance, a sip of your drink, you choose",
       "Take turns spinning the wheel",
-      "Complete the challenge — or drink!",
-      "Most shots = Most legendary"
+      "Complete the challenge — or take the penalty!",
+      "Most challenges completed wins the night"
     ]
   },
-  "ageDisclaimer": {
-    "title": "Age Verification",
-    "message": "This game is intended for players aged 18+ (or the legal drinking age in your country). Please drink responsibly.",
-    "confirm": "I am 18+ and I drink responsibly",
-    "cancel": "I'm under 18"
+  "disclaimer": {
+    "title": "Before we start",
+    "message": "SpinShot is a party game for groups of friends, ages 17+. Play respectfully: nobody has to do anything they're not comfortable with, and skipping is always OK.",
+    "confirm": "I'm 17+ — let's play",
+    "note": "If your group plays with drinks, please drink responsibly and never drink and drive."
   },
   "create": {
     "title": "Create Game",
@@ -35,17 +37,24 @@
     "name": "Your Name",
     "namePlaceholder": "Enter your name",
     "code": "Room Code",
-    "codePlaceholder": "Enter 6-letter code",
-    "joinRoom": "Join Room"
+    "codePlaceholder": "6-letter code",
+    "joinRoom": "Join Room",
+    "comingSoon": "Joining from another phone arrives with online multiplayer. For now, the host adds everyone in the lobby and you pass the phone around."
   },
   "lobby": {
     "title": "Game Lobby",
     "roomCode": "Room Code",
-    "players": "Players",
+    "players": "Players ({{count}})",
+    "addPlayer": "Add a player on this phone",
+    "addPlaceholder": "Player name",
+    "add": "Add",
+    "remove": "Remove",
     "waiting": "Waiting for host to start...",
     "startGame": "Start Game",
     "minPlayers": "Need at least 2 players",
-    "shareCode": "Share this code with friends!"
+    "shareCode": "Share this code with friends!",
+    "copied": "Copied!",
+    "host": "Host"
   },
   "results": {
     "title": "Game Over!",

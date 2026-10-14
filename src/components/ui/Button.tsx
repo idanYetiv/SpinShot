@@ -1,58 +1,72 @@
-import { type ButtonHTMLAttributes } from "react";
-import { cn } from "../../lib/utils";
+import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from "react-native";
+import { colors, glow, hexToRgba, radius } from "../../theme";
+import { haptic } from "../../lib/haptics";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "sm" | "md" | "lg";
+type Variant = "primary" | "secondary" | "success" | "danger" | "ghost";
+type Size = "md" | "lg";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+const variantColor: Record<Exclude<Variant, "ghost">, string> = {
+  primary: colors.pink,
+  secondary: colors.blue,
+  success: colors.green,
+  danger: colors.red,
+};
+
+interface ButtonProps {
+  title: string;
+  onPress: () => void;
   variant?: Variant;
   size?: Size;
-  glow?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
 }
 
-const variantStyles: Record<Variant, string> = {
-  primary: "bg-neon-pink text-white hover:brightness-110",
-  secondary: "bg-neon-blue text-white hover:brightness-110",
-  danger: "bg-neon-red text-white hover:brightness-110",
-  ghost: "bg-transparent border border-glass-border text-white hover:bg-glass",
-};
-
-const sizeStyles: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-5 py-2.5 text-base",
-  lg: "px-8 py-3.5 text-lg",
-};
-
-const glowStyles: Record<Variant, string> = {
-  primary: "glow-pink",
-  secondary: "glow-blue",
-  danger: "glow-red",
-  ghost: "",
-};
-
-export function Button({
-  variant = "primary",
-  size = "md",
-  glow = false,
-  className,
-  disabled,
-  children,
-  ...props
-}: ButtonProps) {
+export function Button({ title, onPress, variant = "primary", size = "md", disabled, loading, style }: ButtonProps) {
+  const color = variant === "ghost" ? null : variantColor[variant];
   return (
-    <button
-      className={cn(
-        "rounded-xl font-bold transition-all duration-200 cursor-pointer",
-        "active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
-        variantStyles[variant],
-        sizeStyles[size],
-        glow && glowStyles[variant],
-        className,
-      )}
-      disabled={disabled}
-      {...props}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled || loading}
+      onPress={() => {
+        haptic.tap();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.base,
+        size === "lg" ? styles.lg : styles.md,
+        color
+          ? { backgroundColor: color, boxShadow: disabled ? undefined : glow(color) }
+          : styles.ghost,
+        pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 },
+        disabled && styles.disabled,
+        style,
+      ]}
     >
-      {children}
-    </button>
+      {loading ? (
+        <ActivityIndicator color={colors.text} />
+      ) : (
+        <Text
+          style={[
+            styles.label,
+            size === "lg" && styles.labelLg,
+            { color: color && color !== colors.pink && color !== colors.red ? colors.bgDark : colors.text },
+          ]}
+        >
+          {title}
+        </Text>
+      )}
+    </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: { borderRadius: radius.md, alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
+  md: { minHeight: 48 },
+  lg: { minHeight: 58 },
+  ghost: { borderWidth: 1, borderColor: colors.glassBorder, backgroundColor: hexToRgba("#FFFFFF", 0.04) },
+  disabled: { opacity: 0.4 },
+  label: { fontSize: 16, fontWeight: "700" },
+  labelLg: { fontSize: 18, fontWeight: "800" },
+});

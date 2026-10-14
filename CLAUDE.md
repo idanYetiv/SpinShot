@@ -1,13 +1,13 @@
 # SpinShot — Claude Session Guide
 
-> **Read this file at the start of each session.**
+> **Read this file at the start of each session.** Also read `AGENTS.md` (Expo rules).
 
 ---
 
 ## 1. Session Setup (REQUIRED)
 
 ```bash
-cd ~/projects/SpinShot
+cd ~/Personal/SpinShot
 git config user.name "idanYetiv"
 git config user.email "idanyativ@gmail.com"
 ```
@@ -37,9 +37,15 @@ git checkout main && git pull
 
 ## 2. Project Overview
 
-**SpinShot** — A real-time multiplayer party drinking game. Players join a room via code, spin a task wheel, complete challenges or drink. Built for ages 18+.
+**SpinShot** — a real-time multiplayer **party game**. Players join a room via code, spin a challenge wheel, and either complete the challenge or take the group's **penalty**. Ages 17+.
 
-**Tagline:** Spin it. Do it. Or drink it.
+**Tagline:** Spin it. Do it. Or pay the penalty.
+
+### Content rule (App Store)
+The app is a *party game*, not a drinking game. In-app text never tells players to drink.
+Missions/chaos/titles say "take the penalty"; the group picks its own house penalty
+(push-ups, a silly dance, a sip — their call). The only alcohol mention is the
+responsible-play note in the disclaimer. Keep it that way when adding content.
 
 ---
 
@@ -47,35 +53,42 @@ git checkout main && git pull
 
 | Layer | Technology |
 |-------|------------|
-| UI | React 19 + TypeScript (strict) |
-| Build | Vite 7 |
-| Styling | Tailwind CSS v4 (CSS-first config) |
-| State | Zustand 5 (client) |
-| Routing | React Router 7 |
-| Animation | Framer Motion |
-| i18n | i18next (Hebrew/English + RTL) |
-| Backend | Supabase (DB + Realtime Channels + Presence) |
-| Native | Capacitor 8 (iOS + Android) |
-| Deploy | Vercel |
+| App | Expo SDK 57 + React Native 0.86 + TypeScript (strict) |
+| Routing | Expo Router (file-based, `src/app/`) |
+| Styling | `StyleSheet` + tokens in `src/theme` (neon theme, `boxShadow` glows) |
+| State | Zustand 5 (`gameStore` = game engine, `playerStore` persisted via AsyncStorage) |
+| Animation | Reanimated 4 (wheel, entering animations), expo-haptics |
+| Graphics | react-native-svg (wheel), expo-linear-gradient (background) |
+| i18n | i18next + react-i18next (Hebrew/English, RTL via `direction` style) |
+| Backend | Supabase (Phase 2 — DB + Realtime Channels + Presence) |
+| Build/Deploy | EAS Build / Submit / Update |
+
+Bundle id: `com.isyappstudio.spinshot` (iOS + Android).
 
 ---
 
 ## 4. Project Structure
 
 ```
-~/projects/SpinShot/
-├── CLAUDE.md / README.md / SPINSHOT_Game_Spec.md
-├── package.json / vite.config.ts / tsconfig*.json
-├── index.html
+SpinShot/
+├── CLAUDE.md / AGENTS.md / README.md / SYSTEM-DESIGN.md / SPINSHOT_Game_Spec.md
+├── app.json / package.json / tsconfig.json
+├── assets/images/            # icon, splash, adaptive icons (placeholders — replace)
 └── src/
-    ├── main.tsx / App.tsx / index.css
-    ├── pages/          # 6 route pages
-    ├── components/     # ui/, welcome/, lobby/, game/, results/
-    ├── hooks/          # useDirection, (future: useRoom, useRoomChannel, etc.)
-    ├── store/          # gameStore.ts, playerStore.ts (Zustand)
-    ├── lib/            # types, utils, roomCode, gameLogic, platform, supabase
-    ├── data/           # missions (80), chaosEvents, titles
-    └── i18n/           # i18next config + en/he locales
+    ├── app/                  # Expo Router screens
+    │   ├── _layout.tsx       # Stack, i18n init, language restore
+    │   ├── index.tsx         # Welcome (+ disclaimer, how to play)
+    │   ├── create.tsx / join.tsx
+    │   ├── lobby/[code].tsx  # room code, players (pass-and-play add)
+    │   ├── game/[code].tsx   # wheel, mission card, chaos, leaderboard, timer
+    │   └── results/[code].tsx
+    ├── components/           # ui/, welcome/, lobby/, game/, results/
+    ├── hooks/useDirection.ts # RTL helpers (native style / web document dir)
+    ├── store/                # gameStore.ts (engine), playerStore.ts (persisted)
+    ├── lib/                  # types, gameLogic, roomCode, utils, haptics
+    ├── data/                 # missions (80), chaosEvents (8), titles (5)
+    ├── i18n/                 # i18next config + en/he locales
+    └── theme/                # colors, glow helpers, spacing
 ```
 
 ---
@@ -83,57 +96,46 @@ git checkout main && git pull
 ## 5. Quick Commands
 
 ```bash
-npm run dev          # Dev server with HMR
-npm run build        # Production build (tsc + vite build)
-npm run preview      # Preview production build
+npm install
+npx expo start            # dev server — scan QR with Expo Go
+npx expo start --web      # web preview
+npm run typecheck         # tsc --noEmit
+npx expo install <pkg>    # ALWAYS use this to add packages
+npx expo-doctor           # dependency/config check
 ```
+
+Everything used today runs in **Expo Go** (no custom native modules yet).
 
 ---
 
 ## 6. Key Patterns
 
-- **Neon party theme**: Dark bg (#0A0A0A → #1A0B2E), neon pink/blue/green accents, glow effects, glassmorphism
-- **i18n**: Hebrew + English with RTL support via `useDirection` hook
-- **Host authority**: Host client runs game logic, broadcasts state via Supabase Realtime; others listen
-- **No auth in MVP**: Public rooms, no user accounts
-- **Room codes**: 6-character alphanumeric (no ambiguous chars like 0/O/1/I/L)
-- **State**: Zustand for game state, playerStore persisted to localStorage
+- **Game engine in `gameStore`**: turn rotation, mission selection, chaos effects, scoring, end conditions. Screens only call actions (`spin`, `completeMission`, `failMission`, `endGame`).
+- **Host authority (Phase 2)**: the host phone runs `gameStore` and broadcasts state over Supabase Realtime; other phones render it. Today it runs locally as **pass-and-play** (host adds players in the lobby).
+- **Wheel**: the landing segment is picked first, then the wheel animates so that segment stops under the pointer.
+- **RTL**: `useDirectionStyle()` on screen roots (Yoga `direction`), `document.dir` on web. No `I18nManager.forceRTL` (avoids app reload).
+- **Room codes**: 6 chars, no ambiguous characters (0/O/1/I/L).
+- **No auth in MVP**: Phase 2 should use Supabase anonymous sign-in, not open RLS.
 
 ---
 
-## 7. Routes
+## 7. Implementation Phases
 
-| Route | Page | Description |
-|-------|------|-------------|
-| `/` | WelcomePage | Logo, Create/Join/How to Play, age disclaimer |
-| `/create` | CreateGamePage | Name, language, game length |
-| `/join` | JoinGamePage | Name, room code |
-| `/lobby/:code` | LobbyPage | Player list, room code, host starts |
-| `/game/:code` | GamePage | Spinner, missions, leaderboard |
-| `/results/:code` | ResultsPage | Final leaderboard, titles |
+- **Phase 1** ✅ — UI, 80 missions, i18n (Vite)
+- **Phase 1.5** ✅ — Migrated to Expo; party-game wording; local game engine + pass-and-play
+- **Phase 2** — Supabase + real-time multiplayer (rooms, Presence, broadcast host state)
+- **Phase 3** — Polish: sounds, QR join, custom house penalty, more missions
+- **Phase 4** — EAS builds, TestFlight, store listing
 
 ---
 
-## 8. Implementation Phases
-
-- **Phase 1** ✅ — Project setup + static UI (all pages, components, 80 missions, i18n)
-- **Phase 2** — Supabase + real-time multiplayer (DB, Realtime channels, room CRUD)
-- **Phase 3** — Core game loop (turn rotation, mission flow, chaos events, timer)
-- **Phase 4** — End game + polish (results, sounds, haptics, QR codes)
-- **Phase 5** — Capacitor + deploy (iOS/Android, Vercel, CI)
-
----
-
-## 9. Visual Theme
+## 8. Visual Theme
 
 - Background: `#0A0A0A` → `#1A0B2E` gradient
-- Primary: Neon Pink `#FF10F0`
-- Secondary: Electric Blue `#00D4FF`
-- Success: Neon Green `#39FF14`
-- Fail: Fire Red `#FF3131`
-- Gold: `#FFD700` (special events)
-- Dark mode only, glow effects, glassmorphism cards
+- Primary: Neon Pink `#FF10F0` · Secondary: Electric Blue `#00D4FF`
+- Success: Neon Green `#39FF14` · Fail: Fire Red `#FF3131` · Gold `#FFD700` (chaos, awards)
+- Dark mode only, glow effects (`glow()` in `src/theme`), glass cards
 
 ---
 
-*Last updated: March 2, 2026*
+*Last updated: October 14, 2026*

@@ -1,63 +1,49 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { StyleSheet, Text, View } from "react-native";
+import Animated, { ZoomIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import type { Mission, Language } from "../../lib/types";
+import type { Language, Mission } from "../../lib/types";
+import { colors, space } from "../../theme";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { CATEGORY_COLORS } from "./categoryColors";
 
 interface MissionCardProps {
-  mission: Mission | null;
+  mission: Mission;
   language: Language;
+  playerName: string;
   onComplete: () => void;
   onFail: () => void;
 }
 
-const categoryBadgeVariant = {
-  solo: "pink" as const,
-  duo: "blue" as const,
-  group: "green" as const,
-  truth: "gold" as const,
-  skill: "red" as const,
-  speed: "red" as const,
-  secret: "gold" as const,
-};
-
-export function MissionCard({ mission, language, onComplete, onFail }: MissionCardProps) {
+export function MissionCard({ mission, language, playerName, onComplete, onFail }: MissionCardProps) {
   const { t } = useTranslation("game");
-
+  const color = CATEGORY_COLORS[mission.category];
   return (
-    <AnimatePresence mode="wait">
-      {mission && (
-        <motion.div
-          key={mission.id}
-          initial={{ scale: 0.8, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.8, opacity: 0, y: -20 }}
-          className="glass glow-pink rounded-2xl p-6 text-center"
-        >
-          <Badge variant={categoryBadgeVariant[mission.category]} className="mb-3">
-            {t(`categories.${mission.category}`)}
-          </Badge>
-
-          <p className="text-xl font-bold mb-6 leading-relaxed">
-            {mission.text[language]}
-          </p>
-
-          {mission.duration && (
-            <p className="text-text-secondary text-sm mb-4">
-              ⏱ {mission.duration}s
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            <Button variant="primary" glow onClick={onComplete} className="flex-1">
-              {t("complete")}
-            </Button>
-            <Button variant="danger" glow onClick={onFail} className="flex-1">
-              {t("fail")}
-            </Button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <Animated.View entering={ZoomIn.springify().damping(14)} key={mission.id} style={styles.wrap}>
+      <Card glowColor={color} style={styles.card}>
+        <View style={styles.header}>
+          <Badge label={t(`categories.${mission.category}`)} color={color} />
+          {mission.duration ? <Text style={styles.duration}>⏱ {t("seconds", { count: mission.duration })}</Text> : null}
+        </View>
+        <Text style={styles.player}>{playerName}</Text>
+        <Text style={styles.text}>{mission.text[language]}</Text>
+        <View style={styles.actions}>
+          <Button title={t("complete")} variant="success" onPress={onComplete} style={styles.flex} />
+          <Button title={t("fail")} variant="danger" onPress={onFail} style={styles.flex} />
+        </View>
+      </Card>
+    </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { width: "100%" },
+  card: { padding: space.xl, gap: space.lg },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  duration: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
+  player: { color: colors.textSecondary, fontSize: 15, fontWeight: "700", textAlign: "center" },
+  text: { color: colors.text, fontSize: 22, fontWeight: "800", lineHeight: 30, textAlign: "center" },
+  actions: { flexDirection: "row", gap: space.md, marginTop: space.sm },
+  flex: { flex: 1 },
+});

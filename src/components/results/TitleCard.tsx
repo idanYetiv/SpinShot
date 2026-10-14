@@ -1,27 +1,29 @@
-import { motion } from "framer-motion";
-import type { PlayerTitle, Player, Language } from "../../lib/types";
+import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import type { Language, Player, PlayerTitle } from "../../lib/types";
+import { colors, space } from "../../theme";
+import { Card } from "../ui/Card";
 
-interface TitleCardProps {
-  title: PlayerTitle;
-  player: Player;
-  language: Language;
-  index: number;
-}
-
-export function TitleCard({ title, player, language, index }: TitleCardProps) {
+export function TitleCard({ title, player, language, index }: { title: PlayerTitle; player: Player; language: Language; index: number }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.2 }}
-      className="glass glow-gold rounded-2xl p-5 text-center"
-    >
-      <div className="text-4xl mb-2">{title.emoji}</div>
-      <h3 className="text-lg font-bold text-neon-gold">{title.text[language]}</h3>
-      <p className="text-xl font-black mt-1">{player.name}</p>
-      <p className="text-sm text-text-secondary mt-1">
-        {title.description[language]}
-      </p>
-    </motion.div>
+    <Animated.View entering={FadeInDown.delay(index * 150)}>
+      <Card glowColor={colors.gold} style={styles.card}>
+        <Text style={styles.emoji}>{title.emoji}</Text>
+        <View style={styles.body}>
+          <Text style={styles.title}>{title.text[language]}</Text>
+          <Text style={styles.player}>{player.name}</Text>
+          <Text style={styles.desc}>{title.description[language]}</Text>
+        </View>
+      </Card>
+    </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: space.lg },
+  emoji: { fontSize: 40 },
+  body: { flex: 1, gap: 2 },
+  title: { color: colors.gold, fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", textAlign: "left" },
+  player: { color: colors.text, fontSize: 20, fontWeight: "900", textAlign: "left" },
+  desc: { color: colors.textSecondary, fontSize: 13, textAlign: "left" },
+});
